@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, Edit2, Eye, EyeOff, Copy, ExternalLink, Rocket } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Toaster, toast } from 'react-hot-toast';
@@ -39,18 +39,7 @@ export default function Dashboard() {
     usage: 0
   });
 
-  useEffect(() => {
-    fetchApiKeys();
-    const interval = setInterval(() => {
-      if (DEMO_MODE) {
-        simulateUsage();
-      }
-    }, 5000); // Update every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('api_keys')
@@ -62,9 +51,9 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error fetching API keys:', error);
     }
-  };
+  }, []);
 
-  const simulateUsage = async () => {
+  const simulateUsage = useCallback(async () => {
     if (!DEMO_MODE) return;
     
     for (const key of apiKeys) {
@@ -81,7 +70,18 @@ export default function Dashboard() {
     
     // Refresh the keys after updating usage
     fetchApiKeys();
-  };
+  }, [apiKeys, fetchApiKeys]);
+
+  useEffect(() => {
+    fetchApiKeys();
+    const interval = setInterval(() => {
+      if (DEMO_MODE) {
+        simulateUsage();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [fetchApiKeys, simulateUsage]);
 
   const toggleKeyVisibility = (id: string) => {
     setVisibleKeyIds(prev => {
@@ -544,7 +544,7 @@ export default function Dashboard() {
                       />
                     )}
                     <p className="text-sm text-gray-400 mt-2">
-                      * If the combined usage of all your keys exceeds your plan's limit, all requests will be rejected.
+                      * If the combined usage of all your keys exceeds your plan&apos;s limit, all requests will be rejected.
                     </p>
                   </div>
 
