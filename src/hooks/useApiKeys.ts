@@ -18,7 +18,7 @@ export function useApiKeys() {
     usage: 0
   });
 
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     try {
       const data = await apiKeyService.fetchApiKeys();
       setApiKeys(data);
@@ -27,7 +27,7 @@ export function useApiKeys() {
       console.error('Error fetching API keys:', errorMessage);
       toast.error(errorMessage);
     }
-  };
+  }, [setApiKeys]);
 
   const simulateUsage = useCallback(async () => {
     if (!DEMO_MODE) return;
@@ -56,7 +56,7 @@ export function useApiKeys() {
     return () => clearInterval(interval);
   }, [simulateUsage, fetchApiKeys]);
 
-  const handleCreate = async () => {
+  const handleCreate = useCallback(async () => {
     try {
       const newKey = {
         name: formData.name,
@@ -81,9 +81,9 @@ export function useApiKeys() {
       console.error('Error creating API key:', errorMessage);
       toast.error(errorMessage);
     }
-  };
+  }, [formData, fetchApiKeys, setIsModalOpen, setFormData]);
 
-  const handleUpdate = async () => {
+  const handleUpdate = useCallback(async () => {
     if (!currentKey) return;
     try {
       await apiKeyService.updateApiKey(currentKey.id, formData);
@@ -103,9 +103,9 @@ export function useApiKeys() {
       console.error('Error updating API key:', errorMessage);
       toast.error(errorMessage);
     }
-  };
+  }, [currentKey, formData, fetchApiKeys, setIsModalOpen, setCurrentKey, setFormData]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       await apiKeyService.deleteApiKey(id);
       toast.success('API key deleted successfully');
@@ -115,9 +115,9 @@ export function useApiKeys() {
       console.error('Error deleting API key:', errorMessage);
       toast.error(errorMessage);
     }
-  };
+  }, [fetchApiKeys]);
 
-  const handleReset = async (id: string) => {
+  const handleReset = useCallback(async (id: string) => {
     try {
       await apiKeyService.updateUsage(id, 0);
       toast.success('Usage reset successfully');
@@ -127,9 +127,9 @@ export function useApiKeys() {
       console.error('Error resetting usage:', errorMessage);
       toast.error(errorMessage);
     }
-  };
+  }, [fetchApiKeys]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setCurrentKey(null);
     setFormData({
       name: '',
@@ -139,7 +139,7 @@ export function useApiKeys() {
       usage: 0
     });
     setIsModalOpen(false);
-  };
+  }, []);
 
   return {
     apiKeys,
