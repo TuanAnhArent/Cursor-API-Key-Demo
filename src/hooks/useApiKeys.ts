@@ -18,14 +18,16 @@ export function useApiKeys() {
     usage: 0
   });
 
-  const fetchApiKeys = useCallback(async () => {
+  const fetchApiKeys = async () => {
     try {
       const data = await apiKeyService.fetchApiKeys();
       setApiKeys(data);
-    } catch (error) {
-      console.error('Error fetching API keys:', error);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch API keys';
+      console.error('Error fetching API keys:', errorMessage);
+      toast.error(errorMessage);
     }
-  }, []);
+  };
 
   const simulateUsage = useCallback(async () => {
     if (!DEMO_MODE) return;
@@ -34,8 +36,9 @@ export function useApiKeys() {
       try {
         const randomUsage = Math.floor(Math.random() * 1000);
         await apiKeyService.updateUsage(key.id, randomUsage);
-      } catch (error) {
-        console.error('Error updating usage:', error);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to update usage';
+        console.error('Error updating usage:', errorMessage);
       }
     }
     
@@ -51,14 +54,10 @@ export function useApiKeys() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchApiKeys, simulateUsage]);
+  }, [simulateUsage, fetchApiKeys]);
 
   const handleCreate = async () => {
     try {
-      if (!formData.name) {
-        throw new Error('Name is required');
-      }
-
       const newKey = {
         name: formData.name,
         key: `tvly-${formData.type}-${Math.random().toString(36).substr(2, 32)}`,
@@ -66,110 +65,67 @@ export function useApiKeys() {
         usage: formData.usage,
         limits: formData.limitEnabled ? formData.limits : null
       };
-
-      const data = await apiKeyService.createApiKey(newKey);
-      setApiKeys([data, ...apiKeys]);
-      resetForm();
-      toast.success('API key created successfully', {
-        style: {
-          background: '#1e2435',
-          color: '#fff',
-          border: '1px solid #374151',
-        },
-        iconTheme: {
-          primary: '#10B981',
-          secondary: '#fff',
-        },
+      await apiKeyService.createApiKey(newKey);
+      toast.success('API key created successfully');
+      setIsModalOpen(false);
+      setFormData({
+        name: '',
+        type: 'dev',
+        limitEnabled: false,
+        limits: null,
+        usage: 0
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      fetchApiKeys();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create API key';
       console.error('Error creating API key:', errorMessage);
-      toast.error(errorMessage, {
-        style: {
-          background: '#1e2435',
-          color: '#fff',
-          border: '1px solid #374151',
-        },
-        iconTheme: {
-          primary: '#EF4444',
-          secondary: '#fff',
-        },
-      });
+      toast.error(errorMessage);
     }
   };
 
   const handleUpdate = async () => {
     if (!currentKey) return;
     try {
-      const updatedKey = {
-        name: formData.name,
-        type: formData.type,
-        limits: formData.limitEnabled ? formData.limits : null,
-        usage: formData.usage
-      };
-
-      const data = await apiKeyService.updateApiKey(currentKey.id, updatedKey);
-      setApiKeys(apiKeys.map(key => 
-        key.id === currentKey.id ? { ...key, ...data } as ApiKey : key
-      ));
-      resetForm();
-      toast.success('API key updated successfully', {
-        style: {
-          background: '#1e2435',
-          color: '#fff',
-          border: '1px solid #374151',
-        },
-        iconTheme: {
-          primary: '#10B981',
-          secondary: '#fff',
-        },
+      await apiKeyService.updateApiKey(currentKey.id, formData);
+      toast.success('API key updated successfully');
+      setIsModalOpen(false);
+      setCurrentKey(null);
+      setFormData({
+        name: '',
+        type: 'dev',
+        limitEnabled: false,
+        limits: null,
+        usage: 0
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      fetchApiKeys();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update API key';
       console.error('Error updating API key:', errorMessage);
-      toast.error(errorMessage, {
-        style: {
-          background: '#1e2435',
-          color: '#fff',
-          border: '1px solid #374151',
-        },
-        iconTheme: {
-          primary: '#EF4444',
-          secondary: '#fff',
-        },
-      });
+      toast.error(errorMessage);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await apiKeyService.deleteApiKey(id);
-      setApiKeys(apiKeys.filter(key => key.id !== id));
-      toast.success('API key deleted successfully', {
-        style: {
-          background: '#1e2435',
-          color: '#fff',
-          border: '1px solid #374151',
-        },
-        icon: '❌',
-        iconTheme: {
-          primary: '#EF4444',
-          secondary: '#1e2435',
-        },
-      });
-    } catch (error) {
-      console.error('Error deleting API key:', error);
-      toast.error('Failed to delete API key', {
-        style: {
-          background: '#1e2435',
-          color: '#fff',
-          border: '1px solid #374151',
-        },
-        iconTheme: {
-          primary: '#EF4444',
-          secondary: '#fff',
-        },
-      });
+      toast.success('API key deleted successfully');
+      fetchApiKeys();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete API key';
+      console.error('Error deleting API key:', errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleReset = async (id: string) => {
+    try {
+      await apiKeyService.updateUsage(id, 0);
+      toast.success('Usage reset successfully');
+      fetchApiKeys();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset usage';
+      console.error('Error resetting usage:', errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -198,6 +154,7 @@ export function useApiKeys() {
     handleCreate,
     handleUpdate,
     handleDelete,
+    handleReset,
     resetForm
   };
 } 
