@@ -296,7 +296,7 @@ export default function Dashboard() {
           secondary: '#fff',
         },
       });
-    } catch (error) {
+    } catch {
       toast.error('Failed to copy key to clipboard', {
         style: {
           background: '#1e2435',
