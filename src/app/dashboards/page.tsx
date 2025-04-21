@@ -41,12 +41,11 @@ export default function Dashboard() {
 
   const fetchApiKeys = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('api_keys')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
       setApiKeys(data || []);
     } catch (error) {
       console.error('Error fetching API keys:', error);

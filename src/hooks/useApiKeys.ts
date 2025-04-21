@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ApiKey, FormData } from '@/types/api-key';
 import { apiKeyService } from '@/services/api-key.service';
 import { toast } from 'react-hot-toast';
@@ -18,27 +18,16 @@ export function useApiKeys() {
     usage: 0
   });
 
-  useEffect(() => {
-    fetchApiKeys();
-    const interval = setInterval(() => {
-      if (DEMO_MODE) {
-        simulateUsage();
-      }
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchApiKeys = async () => {
+  const fetchApiKeys = useCallback(async () => {
     try {
       const data = await apiKeyService.fetchApiKeys();
       setApiKeys(data);
     } catch (error) {
       console.error('Error fetching API keys:', error);
     }
-  };
+  }, []);
 
-  const simulateUsage = async () => {
+  const simulateUsage = useCallback(async () => {
     if (!DEMO_MODE) return;
     
     for (const key of apiKeys) {
@@ -51,7 +40,18 @@ export function useApiKeys() {
     }
     
     fetchApiKeys();
-  };
+  }, [apiKeys, fetchApiKeys]);
+
+  useEffect(() => {
+    fetchApiKeys();
+    const interval = setInterval(() => {
+      if (DEMO_MODE) {
+        simulateUsage();
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [fetchApiKeys, simulateUsage]);
 
   const handleCreate = async () => {
     try {
