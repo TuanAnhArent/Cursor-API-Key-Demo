@@ -5,6 +5,7 @@ import { Plus, Trash2, Edit2, Eye, EyeOff, Copy, ExternalLink, Rocket } from 'lu
 import { supabase } from '@/lib/supabase';
 import { Toaster, toast } from 'react-hot-toast';
 import Sidebar from '@/components/Sidebar';
+import { useRouter } from 'next/navigation';
 
 interface ApiKey {
   id: string;
@@ -27,6 +28,8 @@ interface FormData {
 const DEMO_MODE = true; // Set to false in production
 
 export default function Dashboard() {
+  const router = useRouter();
+  const [session, setSession] = useState<any>(null);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentKey, setCurrentKey] = useState<ApiKey | null>(null);
@@ -70,6 +73,25 @@ export default function Dashboard() {
     // Refresh the keys after updating usage
     fetchApiKeys();
   }, [apiKeys, fetchApiKeys]);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+      
+      if (!session) {
+        router.push('/');
+      }
+    };
+
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   useEffect(() => {
     fetchApiKeys();
@@ -311,6 +333,19 @@ export default function Dashboard() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a1f2e]">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex">
       <Sidebar />
@@ -321,6 +356,17 @@ export default function Dashboard() {
             <span>Pages</span>
             <span>/</span>
             <span>Overview</span>
+            <div className="ml-auto flex items-center gap-4">
+              <span className="text-sm text-gray-400">
+                {session.user.email}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
           <h1 className="text-4xl font-bold">Overview</h1>
