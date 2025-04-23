@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { toast, Toaster } from 'react-hot-toast';
+import Image from 'next/image';
 
 interface EmailFormData {
   email: string;
@@ -14,8 +15,7 @@ interface EmailFormData {
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [session, setSession] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [emailFormData, setEmailFormData] = useState<EmailFormData>({
@@ -40,7 +40,7 @@ export default function Home() {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+      setLoading(false);
       
       if (session) {
         router.push('/dashboards');
@@ -50,7 +50,6 @@ export default function Home() {
     checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
       if (session) {
         router.push('/dashboards');
       }
@@ -61,7 +60,7 @@ export default function Home() {
 
   const handleLogin = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -76,14 +75,14 @@ export default function Home() {
       console.error('Error:', error);
       toast.error('Failed to login. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      setIsLoading(true);
+      setLoading(true);
 
       if (isSignUp) {
         if (emailFormData.password !== emailFormData.confirmPassword) {
@@ -108,52 +107,58 @@ export default function Home() {
       }
 
       setShowEmailModal(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error:', error);
-      toast.error(error.message || 'Authentication failed');
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      toast.error(errorMessage);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1f2e] flex items-center justify-center">
-      <Toaster position="top-right" />
-      <div className="text-center space-y-8">
-        <h1 className="text-4xl font-bold text-white">Welcome to API Key Manager</h1>
-        <p className="text-gray-400">Manage your API keys securely</p>
-        <div className="flex flex-col gap-4">
-          <button
-            onClick={handleLogin}
-            disabled={isLoading}
-            className={`px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 mx-auto ${
-              isLoading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            <img 
-              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
-              alt="Google logo" 
-              className="w-5 h-5"
-            />
-            {isLoading ? 'Logging in...' : 'Login with Google'}
-          </button>
-          <button
-            onClick={() => setShowEmailModal(true)}
-            disabled={isLoading}
-            className="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2 mx-auto"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-            Login with Email
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-[#1a1f2e] via-[#2a3142] to-[#1e2435] relative">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <Toaster position="top-right" />
+        <div className="max-w-md w-full">
+          <div className="text-center space-y-6 bg-[#1e2435]/90 p-8 rounded-2xl shadow-xl border border-gray-800/50">
+            <h1 className="text-3xl md:text-4xl font-bold text-white">Welcome to API Key Manager</h1>
+            <p className="text-gray-400">Manage your API keys securely</p>
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className={`w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center gap-2 ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <Image 
+                  src="/google-logo.svg"
+                  alt="Google logo" 
+                  width={20}
+                  height={20}
+                />
+                {loading ? 'Logging in...' : 'Login with Google'}
+              </button>
+              <button
+                onClick={() => setShowEmailModal(true)}
+                disabled={loading}
+                className="w-full px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Login with Email
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Email Authentication Modal */}
       {showEmailModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-[#1e2435] rounded-xl p-8 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#1e2435] rounded-xl p-6 md:p-8 w-full max-w-md">
             <h2 className="text-2xl font-bold text-white mb-6">
               {isSignUp ? 'Create an Account' : 'Sign In'}
             </h2>
@@ -190,15 +195,15 @@ export default function Home() {
                   />
                 </div>
               )}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 mt-6">
                 <button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={loading}
                   className={`w-full px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors ${
-                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {isLoading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
+                  {loading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Sign In'}
                 </button>
                 <button
                   type="button"

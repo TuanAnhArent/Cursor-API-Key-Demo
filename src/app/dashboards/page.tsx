@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Toaster, toast } from 'react-hot-toast';
 import Sidebar from '@/components/Sidebar';
 import { useRouter } from 'next/navigation';
+import { Session } from '@supabase/auth-js';
 
 interface ApiKey {
   id: string;
@@ -29,7 +30,7 @@ const DEMO_MODE = true; // Set to false in production
 
 export default function Dashboard() {
   const router = useRouter();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentKey, setCurrentKey] = useState<ApiKey | null>(null);

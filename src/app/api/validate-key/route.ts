@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { supabase } from '@/lib/supabase';
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // Get API key from request headers
     const headersList = await headers();
@@ -39,6 +39,19 @@ export async function GET(request: Request) {
         created_at: apiKeyData.created_at
       }
     });
+  } catch (error) {
+    console.error('Error validating API key:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST() {
+  try {
+    // Implement your POST logic here
+    return NextResponse.json({ message: 'Not implemented' }, { status: 501 });
   } catch (error) {
     console.error('Error validating API key:', error);
     return NextResponse.json(
